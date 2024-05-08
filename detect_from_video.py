@@ -1,17 +1,28 @@
 import numpy as np
 import argparse
 import tensorflow as tf
+import pandas as pd
 import cv2
+import os
+import csv
 
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
+from pathlib import Path
 
 # patch tf1 into `utils.ops`
 utils_ops.tf = tf.compat.v1
 
 # Patch the location of gfile
 tf.gfile = tf.io.gfile
+
+global dataset
+dataset = {
+    "bounding_box": [],
+    "label": [],
+    "score": []
+}
 
 
 def load_model(model_path):
@@ -70,12 +81,45 @@ def run_inference(model, category_index, cap):
             instance_masks=output_dict.get('detection_masks_reframed', None),
             use_normalized_coordinates=True,
             line_thickness=8)
+
+
+        #print("detection_boxes", output_dict['detection_boxes'])
+        #print("detection classes", output_dict['detection_classes'])
+        #print("detection scores", output_dict['detection_scores'])
+        #write_to_csv(category_index, output_dict)
+
+        new_dataset_folder = "./outputs/"
+
+        #print("Output Dict Box Row 0:", output_dict['detection_boxes'][0])
+        #print("Output Dict Class Row 0:", output_dict['detection_classes'][0])
+        #print("Output Dict Score Row 0:", output_dict['detection_scores'][0])
+
+        if output_dict['detection_classes'][0] == 3:
+            dataset['bounding_box'].append(output_dict['detection_boxes'][0])
+            dataset['label'].append('ball')
+            dataset['score'].append(output_dict['detection_scores'][0])
+
+            df = pd.DataFrame(dataset)
+            df.to_csv(os.path.join(new_dataset_folder, "boundary_box.csv"), index=False)
+
+
         cv2.imshow('object_detection', cv2.resize(image_np, (800, 600)))
         #cv2.VideoWriter('./outputs/video', cv2.VideoWriter_fourcc(*"mpv4v"), 30, cv2.resize(image_np, (800, 600)))
+
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cap.release()
             cv2.destroyAllWindows()
             break
+
+
+def write_to_csv(category_index, output_dict):
+    new_dataset_folder = "./outputs/"
+    dataset['bounding_box'].append(output_dict['detection_boxes'])
+    dataset['label'].append(output_dict['detection_classes'])
+
+    df = pd.DataFrame(dataset)
+    df.to_csv(os.path.join(new_dataset_folder, "boundary_box.csv"), index=False)
+
 
 
 if __name__ == '__main__':
@@ -90,6 +134,7 @@ if __name__ == '__main__':
 
     cap = cv2.VideoCapture(args.video_path)
     run_inference(detection_model, category_index, cap)
+
 
 # python ./detect_from_video.py -m ssd_mobilenet_v2_320x320_coco17_tpu-8/saved_model -l ./data/mscoco_label_map.pbtxt -v ./myVideo.mp4
 # Replace ./myVideo.mp4 with path to videoFile you want ObjectDetected
