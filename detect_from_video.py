@@ -88,7 +88,8 @@ def run_inference(model, category_index, cap):
         #print("detection scores", output_dict['detection_scores'])
         #write_to_csv(category_index, output_dict)
 
-        new_dataset_folder = "./outputs/"
+        #new_dataset_folder = "./outputs/"
+        current_path = "./"
 
         #print("Output Dict Box Row 0:", output_dict['detection_boxes'][0])
         #print("Output Dict Class Row 0:", output_dict['detection_classes'][0])
@@ -100,7 +101,7 @@ def run_inference(model, category_index, cap):
             dataset['score'].append(output_dict['detection_scores'][0])
 
             df = pd.DataFrame(dataset)
-            df.to_csv(os.path.join(new_dataset_folder, "boundary_box.csv"), index=False)
+            df.to_csv(os.path.join(current_path, "boundary_box.csv"), index=False)
 
 
         cv2.imshow('object_detection', cv2.resize(image_np, (800, 600)))
